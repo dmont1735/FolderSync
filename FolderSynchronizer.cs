@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 
 public class FolderSynchronizer
 {
-    public bool FilesAreDifferent(string filePath1, string filePath2)
+    private bool FilesAreDifferent(string filePath1, string filePath2)
     {
         var info1 = new FileInfo(filePath1);
         var info2 = new FileInfo(filePath2);
@@ -20,24 +20,24 @@ public class FolderSynchronizer
         return !hash1.SequenceEqual(hash2);
     }
 
-    public void Synchronize(string sourcePath, string replicaPath)
+    private Dictionary<string, string> GetRelativeFilePaths(string directoryPath)
     {
-        var sourceFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories);
-        var replicaFiles = Directory.GetFiles(replicaPath, "*", SearchOption.AllDirectories);
+        var sourceFiles = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories);
+        var relativePaths = new Dictionary<string, string>();
 
-        var relativeReplicaPaths = new Dictionary<string, string>();
-        foreach (string file in replicaFiles)
-        {
-            var relativePath = Path.GetRelativePath(replicaPath, file);
-            relativeReplicaPaths[relativePath] = file;
-        }
-
-        var relativeSourcePaths = new Dictionary<string, string>();
         foreach (string file in sourceFiles)
         {
-            var relativePath = Path.GetRelativePath(sourcePath, file);
-            relativeSourcePaths[relativePath] = file;
+            var relativePath = Path.GetRelativePath(directoryPath, file);
+            relativePaths[relativePath] = file;
         }
+
+        return relativePaths;
+    }
+
+    public void Synchronize(string sourcePath, string replicaPath)
+    {
+        var relativeReplicaPaths = GetRelativeFilePaths(replicaPath);
+        var relativeSourcePaths = GetRelativeFilePaths(sourcePath);
 
         foreach(var(relativePath, fullPath) in relativeReplicaPaths)
         {
@@ -51,15 +51,19 @@ public class FolderSynchronizer
         {
             var replicaFullPath = Path.Combine(replicaPath,relativePath);
 
-            if (!File.Exists(replicaFullPath)){
-                Directory.CreateDirectory(Path.GetDirectoryName(replicaFullPath));
+            if (!relativeReplicaPaths.ContainsKey(relativePath))
+            {
+                var directoryPath = Path.GetDirectoryName(replicaFullPath);
+                if (!string.IsNullOrEmpty(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                }
                 File.Copy(fullPath,replicaFullPath);
             }
             else
             {
                 if (FilesAreDifferent(fullPath, replicaFullPath))
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(replicaFullPath));
                     File.Copy(fullPath,replicaFullPath, overwrite: true);
                 }
             }
