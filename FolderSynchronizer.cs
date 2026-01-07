@@ -19,4 +19,50 @@ public class FolderSynchronizer
 
         return !hash1.SequenceEqual(hash2);
     }
+
+    public void Synchronize(string sourcePath, string replicaPath)
+    {
+        var sourceFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories);
+        var replicaFiles = Directory.GetFiles(replicaPath, "*", SearchOption.AllDirectories);
+
+        var relativeReplicaPaths = new Dictionary<string, string>();
+        foreach (string file in replicaFiles)
+        {
+            var relativePath = Path.GetRelativePath(replicaPath, file);
+            relativeReplicaPaths[relativePath] = file;
+        }
+
+        var relativeSourcePaths = new Dictionary<string, string>();
+        foreach (string file in sourceFiles)
+        {
+            var relativePath = Path.GetRelativePath(sourcePath, file);
+            relativeSourcePaths[relativePath] = file;
+        }
+
+        foreach(var(relativePath, fullPath) in relativeReplicaPaths)
+        {
+            if (!relativeSourcePaths.ContainsKey(relativePath))
+            {
+                File.Delete(fullPath);
+            }
+        }
+
+        foreach(var (relativePath, fullPath) in relativeSourcePaths)
+        {
+            var replicaFullPath = Path.Combine(replicaPath,relativePath);
+
+            if (!File.Exists(replicaFullPath)){
+                Directory.CreateDirectory(Path.GetDirectoryName(replicaFullPath));
+                File.Copy(fullPath,replicaFullPath);
+            }
+            else
+            {
+                if (FilesAreDifferent(fullPath, replicaFullPath))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(replicaFullPath));
+                    File.Copy(fullPath,replicaFullPath, overwrite: true);
+                }
+            }
+        }
+    }
 }

@@ -9,6 +9,6 @@ class Program
         var sourcePath = args[0];
         var replicaPath = args[1];
         
-        Console.WriteLine(synchronizer.FilesAreDifferent(sourcePath, replicaPath));
+        synchronizer.Synchronize(sourcePath,replicaPath);
     }
 }
