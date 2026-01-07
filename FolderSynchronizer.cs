@@ -34,6 +34,17 @@ public class FolderSynchronizer
         return relativePaths;
     }
 
+    private void DeleteEmptySubdirectories(string directoryPath)
+    {
+        foreach(var directory in Directory.GetDirectories(directoryPath, "*" ,SearchOption.AllDirectories))
+        {
+            if (!Directory.EnumerateFileSystemEntries(directory).Any())
+            {
+                Directory.Delete(directory);
+            }
+        }
+    }
+
     public void Synchronize(string sourcePath, string replicaPath)
     {
         var relativeReplicaPaths = GetRelativeFilePaths(replicaPath);
@@ -67,6 +78,7 @@ public class FolderSynchronizer
                     File.Copy(fullPath,replicaFullPath, overwrite: true);
                 }
             }
+            DeleteEmptySubdirectories(replicaPath);
         }
     }
 }
