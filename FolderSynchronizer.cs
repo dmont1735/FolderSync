@@ -52,44 +52,60 @@ public class FolderSynchronizer
         logger.WriteLog($"[INITIALIZING] - Synchronization of folder {sourcePath} to folder {replicaPath} started");
         var startTime = DateTime.Now;
 
-        var relativeReplicaPaths = GetRelativeFilePaths(replicaPath);
-        var relativeSourcePaths = GetRelativeFilePaths(sourcePath);
-
-        foreach(var(relativePath, fullPath) in relativeReplicaPaths)
+        try
         {
-            if (!relativeSourcePaths.ContainsKey(relativePath))
-            {
-                File.Delete(fullPath);
-                logger.WriteLog($"DELETED file {fullPath}");
+            if (!Directory.Exists(sourcePath)){
+                var ex = new DirectoryNotFoundException(message: $"Source folder could not be found at given location {sourcePath}");
+                throw ex;
             }
-        }
-
-        foreach(var (relativePath, fullPath) in relativeSourcePaths)
-        {
-            var replicaFullPath = Path.Combine(replicaPath,relativePath);
-
-            if (!relativeReplicaPaths.ContainsKey(relativePath))
-            {
-                var directoryPath = Path.GetDirectoryName(replicaFullPath);
-                if (!string.IsNullOrEmpty(directoryPath))
-                {
-                    Directory.CreateDirectory(directoryPath);
-                    logger.WriteLog($"CREATED folder {directoryPath}");
-                }
-                File.Copy(fullPath, replicaFullPath);
-                logger.WriteLog($"COPIED file {fullPath} to replica location at {replicaFullPath}");
+            if (!Directory.Exists(replicaPath)){
+                Directory.CreateDirectory(replicaPath);
+                logger.WriteLog($"CREATED folder {replicaPath}");
             }
-            else
+
+            var relativeReplicaPaths = GetRelativeFilePaths(replicaPath);
+            var relativeSourcePaths = GetRelativeFilePaths(sourcePath);
+
+            foreach(var(relativePath, fullPath) in relativeReplicaPaths)
             {
-                if (FilesAreDifferent(fullPath, replicaFullPath))
+                if (!relativeSourcePaths.ContainsKey(relativePath))
                 {
-                    File.Copy(fullPath, replicaFullPath, overwrite: true);
-                    logger.WriteLog($"UPDATED file {replicaFullPath} with source copy from {fullPath}");
+                    File.Delete(fullPath);
+                    logger.WriteLog($"DELETED file {fullPath}");
                 }
             }
-            DeleteEmptySubdirectories(replicaPath);
+
+            foreach(var (relativePath, fullPath) in relativeSourcePaths)
+            {
+                var replicaFullPath = Path.Combine(replicaPath,relativePath);
+
+                if (!relativeReplicaPaths.ContainsKey(relativePath))
+                {
+                    var directoryPath = Path.GetDirectoryName(replicaFullPath);
+                    if (!string.IsNullOrEmpty(directoryPath))
+                    {
+                        Directory.CreateDirectory(directoryPath);
+                        logger.WriteLog($"CREATED folder {directoryPath}");
+                    }
+                    File.Copy(fullPath, replicaFullPath);
+                    logger.WriteLog($"COPIED file {fullPath} to replica location at {replicaFullPath}");
+                }
+                else
+                {
+                    if (FilesAreDifferent(fullPath, replicaFullPath))
+                    {
+                        File.Copy(fullPath, replicaFullPath, overwrite: true);
+                        logger.WriteLog($"UPDATED file {replicaFullPath} with source copy from {fullPath}");
+                    }
+                }
+                DeleteEmptySubdirectories(replicaPath);
+            }
+            var syncDuration = DateTime.Now - startTime;
+            logger.WriteLog($"[SUCCESS] - Synchronization of folder {sourcePath} to folder {replicaPath} completed in {syncDuration.TotalSeconds} seconds");
         }
-        var syncDuration = DateTime.Now - startTime;
-        logger.WriteLog($"[SUCCESS] - Synchronization of folder {sourcePath} to folder {replicaPath} completed in {syncDuration.TotalSeconds} seconds");
+        catch(Exception e)
+        {
+            logger.WriteLog($"[ERROR] - {e.Message}");
+        }
     }
 }
