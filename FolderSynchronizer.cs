@@ -47,7 +47,7 @@ public class FolderSynchronizer
             if (!Directory.EnumerateFileSystemEntries(directory).Any())
             {
                 Directory.Delete(directory);
-                _logger.WriteLog($"DELETED folder {directory}");
+                _logger.WriteLog($"DELETED: {Path.GetRelativePath(directoryPath, directory)}");
             }
         }
     }
@@ -64,7 +64,7 @@ public class FolderSynchronizer
             }
             if (!Directory.Exists(replicaPath)){
                 Directory.CreateDirectory(replicaPath);
-                _logger.WriteLog($"CREATED folder {replicaPath}");
+                _logger.WriteLog($"CREATED: {replicaPath}");
             }
 
             var relativeReplicaPaths = GetRelativeFilePaths(replicaPath);
@@ -75,13 +75,13 @@ public class FolderSynchronizer
                 if (!relativeSourcePaths.ContainsKey(relativePath))
                 {
                     File.Delete(fullPath);
-                    _logger.WriteLog($"DELETED file {fullPath}");
+                    _logger.WriteLog($"DELETED: {relativePath}");
                 }
             }
 
             foreach(var (relativePath, fullPath) in relativeSourcePaths)
             {
-                var replicaFullPath = Path.Combine(replicaPath,relativePath);
+                var replicaFullPath = Path.Combine(replicaPath, relativePath);
 
                 if (!relativeReplicaPaths.ContainsKey(relativePath))
                 {
@@ -89,18 +89,18 @@ public class FolderSynchronizer
                     if (!string.IsNullOrEmpty(directoryPath) && !Directory.Exists(directoryPath))
                     {
                         Directory.CreateDirectory(directoryPath);
-                        _logger.WriteLog($"CREATED folder {directoryPath}");
+                        _logger.WriteLog($"CREATED: {Path.GetRelativePath(replicaPath, directoryPath)}");
                     }
 
                     File.Copy(fullPath, replicaFullPath);
-                    _logger.WriteLog($"COPIED file {fullPath} to replica location at {replicaFullPath}");
+                    _logger.WriteLog($"COPIED: {relativePath}");
                 }
                 else
                 {
                     if (FilesAreDifferent(fullPath, replicaFullPath))
                     {
                         File.Copy(fullPath, replicaFullPath, overwrite: true);
-                        _logger.WriteLog($"UPDATED file {replicaFullPath} with source copy from {fullPath}");
+                        _logger.WriteLog($"OVERWROTE: {Path.GetRelativePath(replicaPath, replicaFullPath)}");
                     }
                 }
             }
