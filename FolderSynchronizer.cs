@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 
 public class FolderSynchronizer
 {
+    Logger logger = new Logger();
     private bool FilesAreDifferent(string filePath1, string filePath2)
     {
         var info1 = new FileInfo(filePath1);
@@ -41,12 +42,16 @@ public class FolderSynchronizer
             if (!Directory.EnumerateFileSystemEntries(directory).Any())
             {
                 Directory.Delete(directory);
+                logger.WriteLog($"DELETED folder {directory}");
             }
         }
     }
 
     public void Synchronize(string sourcePath, string replicaPath)
     {
+        logger.WriteLog($"[INITIALIZING] - Synchronization of folder {sourcePath} to folder {replicaPath} started");
+        var startTime = DateTime.Now;
+
         var relativeReplicaPaths = GetRelativeFilePaths(replicaPath);
         var relativeSourcePaths = GetRelativeFilePaths(sourcePath);
 
@@ -55,6 +60,7 @@ public class FolderSynchronizer
             if (!relativeSourcePaths.ContainsKey(relativePath))
             {
                 File.Delete(fullPath);
+                logger.WriteLog($"DELETED file {fullPath}");
             }
         }
 
@@ -68,17 +74,22 @@ public class FolderSynchronizer
                 if (!string.IsNullOrEmpty(directoryPath))
                 {
                     Directory.CreateDirectory(directoryPath);
+                    logger.WriteLog($"CREATED folder {directoryPath}");
                 }
-                File.Copy(fullPath,replicaFullPath);
+                File.Copy(fullPath, replicaFullPath);
+                logger.WriteLog($"COPIED file {fullPath} to replica location at {replicaFullPath}");
             }
             else
             {
                 if (FilesAreDifferent(fullPath, replicaFullPath))
                 {
-                    File.Copy(fullPath,replicaFullPath, overwrite: true);
+                    File.Copy(fullPath, replicaFullPath, overwrite: true);
+                    logger.WriteLog($"UPDATED file {replicaFullPath} with source copy from {fullPath}");
                 }
             }
             DeleteEmptySubdirectories(replicaPath);
         }
+        var syncDuration = DateTime.Now - startTime;
+        logger.WriteLog($"[SUCCESS] - Synchronization of folder {sourcePath} to folder {replicaPath} completed in {syncDuration.TotalSeconds} seconds");
     }
 }
