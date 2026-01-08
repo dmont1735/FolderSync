@@ -57,6 +57,10 @@ public class FolderSynchronizer
         _logger.WriteLog($"[INITIALIZING] - Synchronization of folder {sourcePath} to folder {replicaPath} started");
         var startTime = DateTime.Now;
 
+        int filesCopied = 0;
+        int filesOverwritten = 0;
+        int filesDeleted = 0;
+
         try
         {
             if (!Directory.Exists(sourcePath)){
@@ -76,6 +80,7 @@ public class FolderSynchronizer
                 {
                     File.Delete(fullPath);
                     _logger.WriteLog($"DELETED: {relativePath}");
+                    filesDeleted++;
                 }
             }
 
@@ -94,6 +99,7 @@ public class FolderSynchronizer
 
                     File.Copy(fullPath, replicaFullPath);
                     _logger.WriteLog($"COPIED: {relativePath}");
+                    filesCopied++;
                 }
                 else
                 {
@@ -101,17 +107,35 @@ public class FolderSynchronizer
                     {
                         File.Copy(fullPath, replicaFullPath, overwrite: true);
                         _logger.WriteLog($"OVERWROTE: {Path.GetRelativePath(replicaPath, replicaFullPath)}");
+                        filesOverwritten++;
                     }
                 }
             }
             DeleteEmptySubdirectories(replicaPath);
 
             var syncDuration = DateTime.Now - startTime;
-            _logger.WriteLog($"[SUCCESS] - Synchronization of folder {sourcePath} to folder {replicaPath} completed in {syncDuration.TotalSeconds} seconds");
+            _logger.WriteLog($"[SUCCESS] - Synchronization from {sourcePath} to {replicaPath} completed in {syncDuration.TotalSeconds}s: " +
+                $"{filesCopied} files copied, {filesOverwritten} overwritten, {filesDeleted} deleted");
         }
-        catch(Exception e)
+        catch(DirectoryNotFoundException ex)
         {
-            _logger.WriteLog($"[ERROR] - {e.Message}");
+            _logger.WriteLog($"[ERROR] - {ex.Message}");
+            throw;
+        }
+        catch(UnauthorizedAccessException ex)
+        {
+            _logger.WriteLog($"[ERROR] - Access denied: {ex.Message}");
+            throw;
+        }
+        catch(IOException ex)
+        {
+            _logger.WriteLog($"[ERROR] - I/O error: {ex.Message}");
+            throw;
+        }
+        catch(Exception ex)
+        {
+            _logger.WriteLog($"[ERROR] - Unexpected error: {ex.Message}");
+            throw;
         }
     }
 }
