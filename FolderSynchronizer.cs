@@ -2,10 +2,10 @@ using System.Security.Cryptography;
 
 public class FolderSynchronizer
 {
-    private readonly Logger logger;
-    public FolderSynchronizer(string logFilePath)
+    private readonly Logger _logger;
+    public FolderSynchronizer(Logger logger)
     {
-        logger = new Logger(logFilePath);
+        _logger = logger;
     }
 
     private bool FilesAreDifferent(string filePath1, string filePath2)
@@ -47,14 +47,14 @@ public class FolderSynchronizer
             if (!Directory.EnumerateFileSystemEntries(directory).Any())
             {
                 Directory.Delete(directory);
-                logger.WriteLog($"DELETED folder {directory}");
+                _logger.WriteLog($"DELETED folder {directory}");
             }
         }
     }
 
     public void Synchronize(string sourcePath, string replicaPath)
     {
-        logger.WriteLog($"[INITIALIZING] - Synchronization of folder {sourcePath} to folder {replicaPath} started");
+        _logger.WriteLog($"[INITIALIZING] - Synchronization of folder {sourcePath} to folder {replicaPath} started");
         var startTime = DateTime.Now;
 
         try
@@ -65,7 +65,7 @@ public class FolderSynchronizer
             }
             if (!Directory.Exists(replicaPath)){
                 Directory.CreateDirectory(replicaPath);
-                logger.WriteLog($"CREATED folder {replicaPath}");
+                _logger.WriteLog($"CREATED folder {replicaPath}");
             }
 
             var relativeReplicaPaths = GetRelativeFilePaths(replicaPath);
@@ -76,7 +76,7 @@ public class FolderSynchronizer
                 if (!relativeSourcePaths.ContainsKey(relativePath))
                 {
                     File.Delete(fullPath);
-                    logger.WriteLog($"DELETED file {fullPath}");
+                    _logger.WriteLog($"DELETED file {fullPath}");
                 }
             }
 
@@ -87,30 +87,34 @@ public class FolderSynchronizer
                 if (!relativeReplicaPaths.ContainsKey(relativePath))
                 {
                     var directoryPath = Path.GetDirectoryName(replicaFullPath);
-                    if (!string.IsNullOrEmpty(directoryPath))
+                    if (!Directory.Exists(directoryPath))
                     {
-                        Directory.CreateDirectory(directoryPath);
-                        logger.WriteLog($"CREATED folder {directoryPath}");
+                        if (!string.IsNullOrEmpty(directoryPath))
+                        {
+                            Directory.CreateDirectory(directoryPath);
+                            _logger.WriteLog($"CREATED folder {directoryPath}");
+                        }
                     }
+
                     File.Copy(fullPath, replicaFullPath);
-                    logger.WriteLog($"COPIED file {fullPath} to replica location at {replicaFullPath}");
+                    _logger.WriteLog($"COPIED file {fullPath} to replica location at {replicaFullPath}");
                 }
                 else
                 {
                     if (FilesAreDifferent(fullPath, replicaFullPath))
                     {
                         File.Copy(fullPath, replicaFullPath, overwrite: true);
-                        logger.WriteLog($"UPDATED file {replicaFullPath} with source copy from {fullPath}");
+                        _logger.WriteLog($"UPDATED file {replicaFullPath} with source copy from {fullPath}");
                     }
                 }
                 DeleteEmptySubdirectories(replicaPath);
             }
             var syncDuration = DateTime.Now - startTime;
-            logger.WriteLog($"[SUCCESS] - Synchronization of folder {sourcePath} to folder {replicaPath} completed in {syncDuration.TotalSeconds} seconds");
+            _logger.WriteLog($"[SUCCESS] - Synchronization of folder {sourcePath} to folder {replicaPath} completed in {syncDuration.TotalSeconds} seconds");
         }
         catch(Exception e)
         {
-            logger.WriteLog($"[ERROR] - {e.Message}");
+            _logger.WriteLog($"[ERROR] - {e.Message}");
         }
     }
 }
