@@ -1,11 +1,11 @@
 public class Logger
 {
-    private readonly string _logFilePath = "C:/Users/danie/OneDrive/Desktop/testing/logs/log.txt";
+    private readonly string _logFilePath;
 
-    // public Logger(string logFilePath)
-    // {
-    //     _logFilePath = logFilePath;
-    // }
+    public Logger(string logFilePath)
+    {
+        _logFilePath = logFilePath;
+    }
 
     public void WriteLog(string logInfo)
     {

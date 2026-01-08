@@ -2,7 +2,12 @@ using System.Security.Cryptography;
 
 public class FolderSynchronizer
 {
-    Logger logger = new Logger();
+    private readonly Logger logger;
+    public FolderSynchronizer(string logFilePath)
+    {
+        logger = new Logger(logFilePath);
+    }
+
     private bool FilesAreDifferent(string filePath1, string filePath2)
     {
         var info1 = new FileInfo(filePath1);
