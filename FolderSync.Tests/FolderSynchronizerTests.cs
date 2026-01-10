@@ -42,7 +42,7 @@ public class FolderSynchronizerTests : IDisposable
     public void Synchronize_DeletesOldFile_FromReplica()
     {
         var replicaFile = Path.Combine(_replicaPath, "oldFile.txt");
-        File.AppendAllText(replicaFile, "old file");
+        File.WriteAllText(replicaFile, "old file");
 
         _synchronizer.Synchronize(_sourcePath, _replicaPath);
 
@@ -86,11 +86,11 @@ public class FolderSynchronizerTests : IDisposable
         var sourceFile = Path.Combine(_sourcePath, "file.txt");
         File.WriteAllText(sourceFile, "file to copy");
 
-        var _nonExistantFolder = Path.Combine(_testRoot, "nonExistantFolder");
+        var _nonExistentFolder = Path.Combine(_testRoot, "nonExistentFolder");
 
-        _synchronizer.Synchronize(_sourcePath, _nonExistantFolder);
+        _synchronizer.Synchronize(_sourcePath, _nonExistentFolder);
 
-        Assert.True(Directory.Exists(_nonExistantFolder));
+        Assert.True(Directory.Exists(_nonExistentFolder));
     }
 
     [Fact]
