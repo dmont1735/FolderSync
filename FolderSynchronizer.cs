@@ -117,24 +117,17 @@ public class FolderSynchronizer
             _logger.WriteLog($"[SUCCESS] - Synchronization from {sourcePath} to {replicaPath} completed in {syncDuration.TotalSeconds}s: " +
                 $"{filesCopied} files copied, {filesOverwritten} overwritten, {filesDeleted} deleted");
         }
-        catch(DirectoryNotFoundException ex)
-        {
-            _logger.WriteLog($"[ERROR] - {ex.Message}");
-            throw;
-        }
-        catch(UnauthorizedAccessException ex)
-        {
-            _logger.WriteLog($"[ERROR] - Access denied: {ex.Message}");
-            throw;
-        }
-        catch(IOException ex)
-        {
-            _logger.WriteLog($"[ERROR] - I/O error: {ex.Message}");
-            throw;
-        }
         catch(Exception ex)
         {
-            _logger.WriteLog($"[ERROR] - Unexpected error: {ex.Message}");
+            var errorType = ex switch
+            {
+                DirectoryNotFoundException => "Directory not found",
+                UnauthorizedAccessException => "Access denied",
+                IOException => "I/O error",
+                _ => "Unexpected error"
+            };
+            
+            _logger.WriteLog($"[ERROR] - {errorType}: {ex.Message}");
             throw;
         }
     }
